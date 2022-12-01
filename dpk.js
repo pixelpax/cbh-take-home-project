@@ -6,34 +6,39 @@ const crypto = require("crypto");
  *   - Otherwise just stringify the input
  * - If either of them are longer than the MAX_PARTITION_KEY_LENGTH, hash them down to size to deterministically reduce length
  * - If no input provided, return a trivial hash
- * @param event
+ * @param input
  * @returns {string}
  */
-exports.deterministicPartitionKey = (event) => {
-  const TRIVIAL_PARTITION_KEY = "0";
-  const MAX_PARTITION_KEY_LENGTH = 256;
-  let candidate;
 
-  if (event) {
-    if (event.partitionKey) {
-      candidate = event.partitionKey;
+
+const idempotentStringify = (obj) => {
+    if (typeof obj === "string") {
+        return obj;
     } else {
-      const data = JSON.stringify(event);
-      // Can just return here
-      candidate = crypto.createHash("sha3-512").update(data).digest("hex");
+        return JSON.stringify(obj);
     }
-  }
+}
 
-  if (candidate) {
-    if (typeof candidate !== "string") {
-      candidate = JSON.stringify(candidate);
+const hashObject = (obj) => {
+    return crypto.createHash("sha3-512").update(idempotentStringify(obj)).digest("hex");
+}
+
+exports.deterministicPartitionKey = (input) => {
+    const TRIVIAL_PARTITION_KEY = "0";
+    const MAX_PARTITION_KEY_LENGTH = 256;
+
+    if (!input) {
+        return TRIVIAL_PARTITION_KEY
     }
-  } else {
-    candidate = TRIVIAL_PARTITION_KEY;
-  }
 
-  if (candidate.length > MAX_PARTITION_KEY_LENGTH) {
-    candidate = crypto.createHash("sha3-512").update(candidate).digest("hex");
-  }
-  return candidate;
+    if (input.partitionKey) {
+        let stringPartitionKey = idempotentStringify(input.partitionKey);
+        if (stringPartitionKey.length > MAX_PARTITION_KEY_LENGTH) {
+            return hashObject(input.partitionKey);
+        } else {
+            return stringPartitionKey;
+        }
+    }
+
+    return hashObject(input);
 };

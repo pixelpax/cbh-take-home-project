@@ -28,19 +28,24 @@ Assumptions:
    1. Migration may be tricky-- I'm also assuming that clients will want '<NO ID>' shown if an agent is missing an ID after migration, and allowing for manual incremental migration, rather than disallowing them from migrating until every client_override_id is assigned
 
 Tickets: 
-1. Migrate database and backend ORM to accommodate client_override_id
+1. Migrate database and backend ORM to accommodate client_override_id - 1-2 Day(s)
    1. Add a  column `client_override_id` to `agents`, w/ `unique` indexing. 
        1. type guuid or int depending on existing db pattern
    2. Add a column `uses_client_override_ids` column to table `facilities`
    3. Add db comments (and ORM comments) on the original ID to make it clear that it's a 'table_id'
    4. Update backend ORM to include new fields, add model validation to ensure that facilities where `uses_override_id=true`
    5. Update tests to check that new validators will prevent agent creation and update where custom_id is not present
-2. Implement `PUT /agents/toggle-custom-ids` endpoint
+2. Implement `PUT /facilities/toggle-custom-ids` endpoint - 1 Day
    1. We need to be able to turn custom ids on
-3. Update agent creation/update endpoints to reject with proper messaging
+   2. Merely flips the bool in `facilities`
+   3. Endpoint test
+3. Update agent creation/update endpoints to reject with proper messaging - 1 Day
    1. Send sensible error messages in REST endpoints which modify the user, and make sure they handle errors where no `client_override_id` was provided for 
-4. Implement an endpoint to fetch users who are missing custom ids
+   2. Unit test the message
+4. Implement an endpoint to fetch users who are missing custom ids - 1 Day
    1. Should be quick, just copy the existing GET agents endpoint with an additional 'WHERE' clause
+   2. Consider making another ticket to do the converse FE/BE; filter agents OUT who are missing `client_override_id`
+   3. Test the endpoint to make sure it gets all users w/ missing ids and none without.
 5. Send `client_override_id` where appropriate - 1 day
    1. `getShiftsByFacility` and `generateReports` should include `client_override_id` iff `facilities.uses_client_override_ids=true`
       1. We will later use this
@@ -57,7 +62,7 @@ Tickets:
       1. Show all users without custom ids and allow ids to be quickly updated inline
    1. Show a badge on the settings page to let admins know that they have users without ids 
    1. Include e2e tests to ensure that this entire flow works
-8. Present existing reports with custom ids
+8. Present existing reports with custom ids - 3 days
    1. I'm putting both reports in the same ticket so that whoever is designing it can make sure the pattern they design is appropriate for all FE usecases. 
    2. Make a custom function `GetReportDisplayID(Model)` (part of a FE model if such a thing exists, or just a typesafe/ducktyped method)
       1. This function will use `client_override_id` if it is sent (see assumption 3), otherwise it will use `table_id`
@@ -65,5 +70,6 @@ Tickets:
    4. IMPORTANT: Please pull in all relevant FE team on PR to make sure we aren't missing anywhere else in the app where agent ID may be shown
 
 - Ticket 1 must be completed first
-- Tickets (2, 3, 4) depend on ticket 1. They can be parallelized to be worked on by different engineers, but 4 should be given priority as it blocks ticket 5
-- 
+- Tickets (2, 3, 4, 5) depend on ticket 1. They can be parallelized to be worked on by different engineers, but 4 should be given priority as it blocks ticket 5
+- 6 depends on 3, 7 depends on 4, 8 depends on 5
+  - Thus, prioritize 1->4->7, since it's the most likely to be critical path/delay release.

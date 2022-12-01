@@ -10,4 +10,12 @@ You will be graded on the exhaustiveness and quality of your unit tests, the dep
 
 ## Your Explanation Here
 
-- Use es6 standard export/import syntax
+
+- The biggest thing was just that the branching logic was messy, I like to situational narrowing by using return statements as soon as possible.
+  - The most contingent logic was around explicitly specified partitioning keys, so that's where I kept it-- everywhere else could be greatly simplified
+  - For example, checking length and stringifying input without partitionKey is redundant, since it would've been hashed and stringified already anyways
+- Because of the above, 'candidate' was holding onto values that could've been immediately returned, rather than having to weave through several conditional branches on reading
+  - I'm generally a fan of avoiding indirection where possible, i.e. just say "input.partitionKey" a few times, rather than creating an alias (unless naming it adds semantic clarity)
+- I'm not sure what 'event' or 'candidate' meant here, but since this is a pretty generalizable algorithm, we're going to use more general names (e.g. 'input') 
+- Encapsulate stringifying and hashing
+  - I'm pretty sure JSON.stringify isn't idempotent, but I couldn't remember. Just to be sure, I wrapped it
